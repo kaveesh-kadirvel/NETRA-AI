@@ -1,0 +1,7 @@
+earthengine-api>=0.1.370
+streamlit>=1.40.0
+folium>=0.17.0
+streamlit-folium>=0.23.0
+pandas>=2.0.0
+fpdf>=1.7.2
+requests>=2.31.0

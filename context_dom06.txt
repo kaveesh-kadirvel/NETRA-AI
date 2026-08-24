@@ -1,0 +1,97 @@
+================================================================================
+PROJECT CONTEXT & ARCHITECTURAL SUMMARY
+Target Problem Statement: DOM-06 (AgriTech - Precision Farming)
+Platform Name: NETRA.AI (Near-Earth Telemetry & Resource Agronomy)
+================================================================================
+
+1. PROJECT OVERVIEW
+--------------------------------------------------------------------------------
+NETRA.AI is a live, high-fidelity Precision Resource Optimizer. 
+It utilizes real-time Google Earth Engine (GEE) back-ends to pull multi-spectral 
+satellite imagery to quantify agricultural health, water deficits, and nitrogen 
+requirements at the square-meter level. It closes the gap in modern farming by 
+transforming disparate environmental data into rapid, targeted prescriptive actions.
+
+2. ALIGNMENT TO DOM-06 REQUIREMENTS
+--------------------------------------------------------------------------------
+
+REQUIREMENT A: "Uses satellite/drone image data"
+IMPLEMENTATION: 
+The platform utilizes a modular Python backend (`cosmeon/pipeline/runner.py`) that 
+directly queries the Google Earth Engine API. It processes two key datasets:
+- Sentinel-1 SAR (Synthetic Aperture Radar): Used to calculate Water Deficits and 
+  Soil Saturation by identifying massive drops (-2.0 dB) in VV backscatter.
+- Sentinel-2 MSI (Multi-Spectral Optical): Used to calculate NDVI/NDMI Vitality Indices 
+  across crops, highlighting Nitrogen deficits based on a stringent -12% variation threshold.
+
+REQUIREMENT B: "Combined with live weather data"
+IMPLEMENTATION: 
+The Next.js frontend integrates with the Open-Meteo API (`WeatherPanel.tsx`). It 
+dynamically overlays live temperature, wind, and precipitation data on top of the 
+satellite telemetry, allowing the system to cross-reference moisture readings with 
+immediate climatic conditions.
+
+REQUIREMENT C: "Maximize crop yield for square-meter precision"
+IMPLEMENTATION: 
+The Engine operates on a 10m-30m topological grid using morphologic focal smoothing. 
+Users can use the "Intelligence Studio" map interface to draw explicit geometric 
+polygons around their farm plots. The pipeline evaluates that specific geographic 
+boundary to calculate exact `Yield Depletion Tonnages` and `Nitrate Stress Area` 
+(in square kilometers), ignoring large-scale regional macro-statistics in favor of 
+hyper-localized agronomic impact.
+
+REQUIREMENT D: "Resource Optimizer"
+IMPLEMENTATION: 
+The platform features an integrated Generative AI Chatbot (`app/(app)/studio/ai/page.tsx`) 
+running on Llama-3.3 70B (via Groq). The context window is securely fed the 
+serialized pipeline output, acting as a real-time Agronomist. Prompt configurations 
+are locked to "Yield Summary", "Stress Impact", and "Fertilizer Priorities". 
+
+3. CORE TECHNICAL ARCHITECTURE
+--------------------------------------------------------------------------------
+- FRONTEND: Next.js 16 (App Router), React, Leaflet Maps, Tailwind.
+- BACKEND: Next.js API Routes routing heavy computational requests to a local 
+  Python CLI pipeline.
+- INTELLIGENCE ENGINE: Python 3.10+, `earthengine-api`, `pandas`. Executes Bayesian 
+  weighted fusion algorithms to stitch SAR and Optical imagery together.
+- PERSISTENCE: MongoDB Atlas. Maintains a state table of pan-India farms.
+- DATA MODEL: `FarmPlot` (Stores GeoJSON geometry and historical crop metadata) 
+  and `PlotHealthLog` (Time-series data for NDVI, NDMI, Nitrogen Requirements).
+
+4. KEY IMPLEMENTED FEATURES
+--------------------------------------------------------------------------------
+1. Custom Farm Plot Bounding (AOI Draw): Users can freely draw spatial polygons 
+   on the map to process specific sub-meter crop telemetry dynamically.
+2. SAR Moisture Analytics: Automated calculation of water deficit/saturation masks 
+   from raw Sentinel-1 backscatter values.
+3. Optical Vitality Engine (NDVI/NDMI): Live rendering of Nitrogen stress and 
+   vegetation health utilizing Sentinel-2 optics.
+4. Generative AI Agronomist: Embedded conversational agent (Llama-3.3) that receives 
+   pipeline payload data natively to consult on yield drops and fertilizer application.
+5. Automated Native PDF Reports: Single-click generation of professional agronomy 
+   assessments containing map telemetry, statistics, and baseline indices.
+6. Open-Meteo Weather Fusion: Continuous cross-referencing of satellite data with 
+   live temperature and granular rainfall metrics.
+7. Real-Time Telemetry Stream: Internal pipeline logs exposed to the frontend allowing 
+   end-users to diagnose machine learning confidence layers dynamically.
+
+5. USER INTERFACE OVERVIEW (THE COMMAND CENTER)
+--------------------------------------------------------------------------------
+- OVERVIEW: High-level KPI grid tracking average pan-India vitality scores, overall 
+  nitrogen requirements, and active weather states.
+- REGIONAL MAP / SPATIAL INSIGHTS: Interactive Leaflet layer mapping the exact 
+  satellite telemetry data. Users can toggle "Soil Moisture", "Water Deficit", 
+  "Vitality Indices", and "Nitrate Stress".
+- INTELLIGENCE STUDIO (PIPELINE CONTROLS): Users can adjust the statistical 
+  tolerances for the Google Earth Engine processing on the fly (e.g., lowering 
+  the Cloud Cover threshold or modifying the NDVI Nitrate limits to fine-tune 
+  their yield predictions).
+- ASSESSMENT REPORT: Auto-generates a dynamic, print-ready PDF containing the 
+  computed agronomic indices, bounding box geometries, and final Yield Severity Score 
+  to hand directly to farm managers or insurance adjusters.
+
+6. FINAL STATUS
+--------------------------------------------------------------------------------
+The platform is fully production-ready for the DOM-06 presentation. The database 
+is seeded with authentic agricultural geometries, and the backend logic is 
+mathematically coupled squarely to yield optimization heuristics.

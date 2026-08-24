@@ -1,0 +1,111 @@
+# NETRA.AI: Satellite Data to Insight Engine for Climate Risk
+
+> **Status:** Active (Hackathon Development)
+> **Goal:** Transform raw open satellite imagery into actionable climate risk intelligence.
+> **Primary focus:** Real-time flood detection and impact analysis for India (with specialized high-res focus on Assam).
+
+---
+
+## 🌎 Vision & Problem Statement (PS-06)
+NETRA.AI addresses the challenge of underutilized Earth Observation (EO) data. While satellites generate massive volumes of imagery, extracting "decision-ready" insights requires complex processing.
+
+**Key Requirements:**
+- **Automated Detection:** Ingesting Sentinel-1, Sentinel-2, and Landsat data to detect floods/risk zones.
+- **Change Detection:** Comparing historical baseline data with recent satellite passes.
+- **Structured Insights:** Generating statistics on affected areas, population exposure, and risk levels.
+- **Predictive Modeling:** Forecasting risks based on rainfall and historical trends.
+
+---
+
+## 🛠️ Technology Stack
+
+### Frontend (User Interface)
+- **Framework:** Next.js 16 (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS 4 (+ PostCSS)
+- **Animations:** Framer Motion
+- **Visualization:** Recharts (Analytics), Leaflet / React Leaflet (Mapping)
+- **State Management:** SWR (Data Fetching)
+- **Auth:** Next-Auth
+
+### Backend (Intelligence Engine)
+- **Language:** Python 3.10+
+- **Geospatial Engine:** Google Earth Engine (`ee`) - Primary data processor.
+- **Dashboard/Internal UI:** Streamlit
+- **PDF Generation:** FPDF (Climate Risk Reports)
+- **Data Ingestion:** NASA FIRMS (Fire/Thermal), Copernicus (Sentinel-1/2), WorldPop (Demographics).
+
+### Database & Security
+- **Primary DB:** MongoDB (via Mongoose)
+- **Auth:** BCrypt JS
+- **Environment Management:** Dotenv
+
+---
+
+## 🏗️ System Architecture
+
+### 1. Data Ingestion Layer
+- **Sentinel-2 (Optical):** High-resolution multispectral imagery (affected by clouds).
+- **Sentinel-1 (SAR):** Synthetic Aperture Radar imaging (penetrates clouds, essential for flood mapping).
+- **Meteorological Data:** CHIRPS Daily Rainfall.
+- **Terrain Data:** Copernicus DEM (30m resolution) for slope and watershed analysis.
+- **Demographics:** WorldPop (100m) for human exposure calculations.
+
+### 2. Processing Engine (`cosmeon/core/`)
+- **`satellite.py`:** Manages API connections to Earth Engine.
+- **`detection.py`:** Implements flood detection algorithms (NDWI, radar thresholding).
+- **`enrichment.py`:** Intersects water polygons with land use (ESA WorldCover) and population.
+- **`scoring.py`:** Assigns confidence scores (0-100%) and risk tiers (Low, Medium, High).
+
+### 3. API & Communication
+- **Bridges:** A FastAPI-style interface (planned) or Next.js Route Handlers fetch processed JSON from the Python engine.
+- **Persistence:** Metadata about detected events and user data is stored in MongoDB.
+
+---
+
+## 📁 Directory Structure & Module Map
+
+### `/app` (Frontend)
+- `/(auth)`: Login/Signup flows.
+- `/studio`: The "Command Center" containing:
+    - `/ai`: AI-driven predictive insights.
+    - `/risk`: Detailed risk classification and stats.
+    - `/reports`: PDF export and viewing.
+- `/map`: Interactive India-wide flood map using Leaflet.
+
+### `/cosmeon` (Backend Core)
+- `app.py`: The Streamlit dashboard.
+- `/core`: The "Brain" of the project (Detection, Scoring, Enrichment).
+- `/pipeline`: Continuous data fetching scripts.
+- `pdf_gen.py`: Logic for generating polished Climate Risk Reports.
+
+### Root Files
+- `api.py`: System health check and Earth Engine initialization script.
+- `nasafirm.py`: Specialized NASA FIRMS data handler.
+- `package.json` / `requirements.txt`: Dependency manifests.
+
+---
+
+## 🚀 Recent Critical Updates
+1. **Mock Data Removal:** The project has been strictly scrubbed of all placeholder/mock data. If a region has no flood, it shows "0" cases/risk rather than simulated data.
+2. **India Focus:** Expanded map coverage to the entire nation of India.
+3. **Assam Deep-Dive:** Specialized high-resolution polygon detection implemented for the Assam region due to high flood frequency.
+4. **Fire Data Removal:** In alignment with PS-06 (Flood/Climate Risk focus), fire-related UI elements have been deprecated in favor of flood intelligence.
+
+---
+
+## 🔑 Environment Secrets (Reference)
+- `GEE_PROJECT_ID`: Google Earth Engine Project ID.
+- `MONGODB_URI`: Connection string for metadata persistence.
+- `NASA_EARTHDATA_USERNAME`: For accessing high-res satellite collections.
+- `AOI_BBOX`: Default Area of Interest (Assam Coordinates: `[89.7, 24.1, 96.0, 28.2]`).
+
+---
+
+## 📝 Roadmap
+- [ ] Implement fully automated pipeline trigger on new Sentinel-1 pass.
+- [ ] Refine predictive forecasting using CHIRPS rainfall trends.
+- [ ] Enhance Dashboard UI with "Real-Time News Feed" integration (vetted sources only).
+- [ ] Finalize the "One-Click Report" feature for government stakeholders.
+
+*(Generated by Antigravity AI — March 2026)*
