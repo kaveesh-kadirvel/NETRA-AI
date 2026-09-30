@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { timingSafeEqual } from 'node:crypto';
 import { connectDB } from '@/lib/mongodb';
 import { FarmPlot } from '@/lib/models/FarmPlot';
 import { PlotHealthLog } from '@/lib/models/PlotHealthLog';
@@ -7,7 +8,13 @@ import { ProcessingLog } from '@/lib/models/ProcessingLog';
 
 export async function POST(req: NextRequest) {
     const authHeader = req.headers.get('x-pipeline-secret');
-    if (authHeader !== process.env.PIPELINE_SECRET) {
+    const expectedSecret = process.env.PIPELINE_SECRET;
+    if (
+        !authHeader ||
+        !expectedSecret ||
+        Buffer.byteLength(authHeader) !== Buffer.byteLength(expectedSecret) ||
+        !timingSafeEqual(Buffer.from(authHeader), Buffer.from(expectedSecret))
+    ) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

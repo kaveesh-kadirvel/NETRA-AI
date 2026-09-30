@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getAppBaseUrl } from '@/lib/appBaseUrl';
 import { connectDB } from '@/lib/mongodb';
 import { RiskEvent, type RiskLevel } from '@/lib/models/RiskEvent';
 import { District } from '@/lib/models/District';
@@ -94,11 +95,15 @@ function buildFloodPolygon(lat: number, lon: number, areaKm2: number): GeoJSON.P
 
 export async function POST() {
     try {
+        const appBaseUrl = getAppBaseUrl();
+        if (!appBaseUrl) {
+            return NextResponse.json({ error: 'Application base URL is not configured' }, { status: 503 });
+        }
+
         await connectDB();
 
         // 1. Fetch live weather from Open-Meteo (via our own route)
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-        const weatherRes = await fetch(`${baseUrl}/api/realtime/weather`, {
+        const weatherRes = await fetch(new URL('/api/realtime/weather', appBaseUrl), {
             cache: 'no-store',
         });
         if (!weatherRes.ok) throw new Error(`Weather API returned ${weatherRes.status}`);

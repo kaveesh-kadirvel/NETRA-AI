@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { getAppBaseUrl } from '@/lib/appBaseUrl';
 
 export async function POST(req: Request) {
     try {
         const body = await req.json();
         const { id, name, level, pop, lat, lng } = body;
+        const appBaseUrl = getAppBaseUrl();
+        const dashboardUrl = appBaseUrl ? new URL('/dashboard', appBaseUrl).toString() : '#';
 
         const getUrgency = (lvl: string) => {
             if (lvl === 'CRITICAL' || lvl === 'HIGH') return 'URGENT: IMMEDIATE ACTION REQUIRED';
@@ -117,7 +120,7 @@ on the Netra Dashboard and align ground units if needed.
 
                         <!-- Action Buttons -->
                         <div style="text-align: center; margin-top: 30px;">
-                            <a href="http://localhost:3000/dashboard" style="background: #0f172a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; margin-right: 10px; font-size: 14px;">View Live Dashboard</a>
+                            <a href="${dashboardUrl}" style="background: #0f172a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; margin-right: 10px; font-size: 14px;">View Live Dashboard</a>
                             <a href="#" style="background: white; color: #0f172a; border: 1px solid #cbd5e1; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 14px;">Acknowledge Dispatch</a>
                         </div>
                     </div>

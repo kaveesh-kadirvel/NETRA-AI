@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAppBaseUrl } from '@/lib/appBaseUrl';
 
 /**
  * POST /api/telegram/send
@@ -41,6 +42,14 @@ export async function POST(req: NextRequest) {
         const actionEmoji = actionType === 'fertilizer' ? '🌱' : actionType === 'irrigation' ? '💧' : '⚠️';
         const actionLabel = actionType === 'fertilizer' ? 'Khad (Fertilizer)' : actionType === 'irrigation' ? 'Paani (Irrigation)' : 'Action';
         const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+        const appBaseUrl = getAppBaseUrl();
+        const inlineKeyboard = [[
+            {
+                text: '✅ Mark Fertilized — Done!',
+                callback_data: `done:${(farmId ?? 'na').toString().slice(-12)}:${missionId.slice(-8)}`,
+            },
+            ...(appBaseUrl ? [{ text: '🗺️ View on Map', url: new URL('/map', appBaseUrl).toString() }] : []),
+        ]];
 
         const text = [
             `${actionEmoji} *NETRA.AI — Fasal Seva Alert*`,
@@ -61,18 +70,7 @@ export async function POST(req: NextRequest) {
             text,
             // Use compact callback_data (Telegram limit: 64 bytes)
             // Format: "action:farmId:missionId" — parsed in webhook
-            reply_markup: {
-                inline_keyboard: [[
-                    {
-                        text: '✅ Mark Fertilized — Done!',
-                        callback_data: `done:${(farmId ?? 'na').toString().slice(-12)}:${missionId.slice(-8)}`,
-                    },
-                    {
-                        text: '🗺️ View on Map',
-                        url: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/map`,
-                    },
-                ]],
-            },
+            reply_markup: { inline_keyboard: inlineKeyboard },
         };
 
         const tgRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {

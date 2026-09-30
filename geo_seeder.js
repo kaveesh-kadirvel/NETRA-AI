@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
-const MONGODB_URI = 'mongodb+srv://vishwakarmaakashav17:AkashPython123@pythoncluster0.t9pop.mongodb.net/hackx?retryWrites=true&w=majority&appName=pythoncluster0';
+const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) throw new Error('MONGODB_URI must be configured before seeding');
 
 const DISTRICT_COORDS = [
     { name: 'Patna', state: 'Bihar', lat: 25.59, lon: 85.13 },

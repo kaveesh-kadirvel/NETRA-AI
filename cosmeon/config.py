@@ -5,6 +5,7 @@ All constants, GEE project ID, and thresholds live here.
 Import this module first; it authenticates Google Earth Engine once.
 """
 import os
+import json
 import ee
 
 # ── GEE Project ──────────────────────────────────────────────────────────────
@@ -14,11 +15,19 @@ GEE_PROJECT = os.getenv("GEE_PROJECT_ID", "sublime-etching-453915-q9")
 def init_gee() -> None:
     """Authenticate + initialize Earth Engine. Safe to call multiple times."""
     try:
-        ee.Initialize(project=GEE_PROJECT)
+        key_json = os.getenv("GEE_SERVICE_ACCOUNT_JSON")
+        if key_json:
+            service_account = json.loads(key_json)
+            credentials = ee.ServiceAccountCredentials(
+                email=service_account["client_email"],
+                key_data=key_json,
+            )
+            ee.Initialize(credentials=credentials, project=GEE_PROJECT)
+        else:
+            ee.Initialize(project=GEE_PROJECT)
     except Exception as exc:
         raise RuntimeError(
-            f"Earth Engine init failed: {exc}\n"
-            "Run `earthengine authenticate` first."
+            f"Earth Engine initialization failed: {exc}"
         ) from exc
 
 

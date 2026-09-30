@@ -3,7 +3,7 @@ COSMEON — Streamlit Entry Point
 ================================
 Thin orchestrator: wires UI modules, session state, and the pipeline runner.
 All heavy computation stays in core/ and pipeline/.
-Run: streamlit run streamlit/app.py
+Run: streamlit run cosmeon/app.py
 """
 import math
 import pandas as pd

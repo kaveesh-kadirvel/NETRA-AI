@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getJob } from '@/lib/jobQueue';
+import { getStudioJobService } from '@/lib/studioJobService';
 
 /**
  * GET /api/studio/job/[id]
@@ -11,15 +11,29 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id } = await params;
-    const job = getJob(id);
-
-    if (!job) {
-        return NextResponse.json({ status: 'error', error: 'Job not found' }, { status: 404 });
+    const service = getStudioJobService();
+    if (!service) {
+        return NextResponse.json(
+            { status: 'error', error: 'Persistent Studio job service is not configured' },
+            { status: 503 }
+        );
     }
 
-    return NextResponse.json({
-        status: job.status,
-        result: job.result ?? null,
-        error:  job.error  ?? null,
-    });
+    try {
+        const response = await fetch(service.url(`jobs/${encodeURIComponent(id)}`), {
+            headers: { Authorization: `Bearer ${service.token}` },
+            cache: 'no-store',
+        });
+        const result = await response.json().catch(() => null);
+        if (!response.ok) {
+            return NextResponse.json(
+                { status: 'error', error: response.status === 404 ? 'Job not found' : 'Job status unavailable' },
+                { status: response.status >= 500 ? 502 : response.status }
+            );
+        }
+        return NextResponse.json(result, { status: response.status });
+    } catch (error) {
+        console.error('[API /studio/job] Remote status request failed:', error);
+        return NextResponse.json({ status: 'error', error: 'Persistent Studio job service is unavailable' }, { status: 502 });
+    }
 }

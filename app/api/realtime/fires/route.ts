@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server';
  * Free, no rate limits for reasonable usage.
  */
 
-const FIRMS_MAP_KEY = process.env.NASA_FIRM_MAP_KEY ?? '8a04f59c463002b761c0735c9ddc8c6e';
+const FIRMS_MAP_KEY = process.env.NASA_FIRMS_MAP_KEY;
 
 // Assam + Northeast India bounding box: west,south,east,north
 const AOI = '88.0,22.0,97.5,29.5';
@@ -127,6 +127,10 @@ function computeStats(fires: any[]) {
 }
 
 export async function GET() {
+    if (!FIRMS_MAP_KEY) {
+        return NextResponse.json({ error: 'NASA_FIRMS_MAP_KEY is not configured' }, { status: 503 });
+    }
+
     try {
         const now = new Date().toISOString();
 

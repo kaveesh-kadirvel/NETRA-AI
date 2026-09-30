@@ -21,9 +21,10 @@ except ImportError:
 
 # ── GEE ────────────────────────────────────────────────────────
 import ee
+from ingestion.gee_client import init_gee
 
 GEE_PROJECT = os.getenv('GEE_PROJECT_ID', 'sublime-etching-453915-q9')
-ee.Initialize(project=GEE_PROJECT)
+init_gee(GEE_PROJECT)
 print(f"✅ Earth Engine connected · project={GEE_PROJECT}")
 
 # ── CONFIG ─────────────────────────────────────────────────────
@@ -245,8 +246,10 @@ def run():
         logs              = logs,
     )
 
-    target = os.getenv('NEXTJS_INGEST_URL', 'http://localhost:3000/api/pipeline/ingest')
-    secret = os.getenv('PIPELINE_SECRET', 'cosmeon-secret-2026')
+    target = os.getenv('NEXTJS_INGEST_URL')
+    secret = os.getenv('PIPELINE_SECRET')
+    if not target or not secret:
+        raise RuntimeError('NEXTJS_INGEST_URL and PIPELINE_SECRET are required')
 
     print(f"\n  📤 Posting to {target}…")
     try:

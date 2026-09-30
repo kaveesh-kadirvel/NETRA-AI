@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { validatePrescription } from '@/lib/agronomy/guardrails';
+import { getAppBaseUrl } from '@/lib/appBaseUrl';
 
 /**
  * POST /api/dispatch/mission
@@ -302,16 +303,18 @@ export async function POST(req: NextRequest) {
 
         // ── FIRE TELEGRAM ALERT (non-blocking, best-effort) ───────────────────
         try {
-            const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-            fetch(`${baseUrl}/api/telegram/send`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    farmId, farmName, cropType: body.cropType,
-                    healthScore, actionType,
-                    quantity: safeQuantity, riskLevel, area, missionId,
-                }),
+          const appBaseUrl = getAppBaseUrl();
+          if (appBaseUrl) {
+            fetch(new URL('/api/telegram/send', appBaseUrl), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                farmId, farmName, cropType: body.cropType,
+                healthScore, actionType,
+                quantity: safeQuantity, riskLevel, area, missionId,
+              }),
             }).catch(() => {}); // fire-and-forget — never blocks the response
+          }
         } catch {}
 
         return NextResponse.json({

@@ -1,10 +1,6 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/cosmeon';
-
-if (!process.env.MONGODB_URI) {
-    console.warn('MONGODB_URI not set; using local fallback database at mongodb://127.0.0.1:27017/cosmeon');
-}
+const MONGODB_URI = process.env.MONGODB_URI;
 
 interface MongooseCache {
     conn: typeof mongoose | null;
@@ -20,6 +16,7 @@ global.mongoose = cached;
 
 export async function connectDB(): Promise<typeof mongoose> {
     if (cached.conn) return cached.conn;
+    if (!MONGODB_URI) throw new Error('MONGODB_URI must be configured before connecting to MongoDB');
 
     if (!cached.promise) {
         cached.promise = mongoose.connect(MONGODB_URI, {

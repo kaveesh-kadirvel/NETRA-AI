@@ -20,10 +20,11 @@ except Exception:
     pass
 
 import ee
+from ingestion.gee_client import init_gee
 
 GEE_PROJECT = os.getenv('GEE_PROJECT_ID', 'sublime-etching-453915-q9')
 try:
-    ee.Initialize(project=GEE_PROJECT)
+    init_gee(GEE_PROJECT)
     print(f"✅ Earth Engine · project={GEE_PROJECT}")
 except Exception as ex:
     print(f"❌ GEE init failed: {ex}")
@@ -40,8 +41,10 @@ TODAY      = datetime.now(timezone.utc)
 END_DATE   = TODAY.strftime('%Y-%m-%d')
 START_DATE = (TODAY - timedelta(days=14)).strftime('%Y-%m-%d')
 
-PIPELINE_SECRET = os.getenv('PIPELINE_SECRET', 'cosmeon-secret-2026')
-INGEST_URL      = os.getenv('NEXTJS_INGEST_URL', 'http://localhost:3000/api/pipeline/ingest')
+PIPELINE_SECRET = os.getenv('PIPELINE_SECRET')
+INGEST_URL      = os.getenv('NEXTJS_INGEST_URL')
+if not PIPELINE_SECRET or not INGEST_URL:
+    raise RuntimeError('PIPELINE_SECRET and NEXTJS_INGEST_URL are required')
 
 def load_gee_datasets(geom):
     # Sentinel-2 optical — current

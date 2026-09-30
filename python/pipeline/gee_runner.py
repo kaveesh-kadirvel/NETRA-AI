@@ -31,10 +31,11 @@ except Exception:
 
 # ── GEE Auth ───────────────────────────────────────────────────
 import ee
+from ingestion.gee_client import init_gee
 
 GEE_PROJECT = os.getenv('GEE_PROJECT_ID', 'sublime-etching-453915-q9')
 try:
-    ee.Initialize(project=GEE_PROJECT)
+    init_gee(GEE_PROJECT)
     print(f"✅ Earth Engine · project={GEE_PROJECT}")
 except Exception as ex:
     print(f"❌ GEE init failed: {ex}")
@@ -58,8 +59,10 @@ DISTRICTS = [
     dict(name='Jorhat',   state='Assam', lat=26.75, lon=94.20, area_km2=2851, pop=1092256),
 ]
 
-PIPELINE_SECRET = os.getenv('PIPELINE_SECRET', 'cosmeon-secret-2026')
-INGEST_URL      = os.getenv('NEXTJS_INGEST_URL', 'http://localhost:3000/api/pipeline/ingest')
+PIPELINE_SECRET = os.getenv('PIPELINE_SECRET')
+INGEST_URL      = os.getenv('NEXTJS_INGEST_URL')
+if not PIPELINE_SECRET or not INGEST_URL:
+    raise RuntimeError('PIPELINE_SECRET and NEXTJS_INGEST_URL are required')
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -596,7 +599,7 @@ def run():
     except Exception as ex:
         log('ERROR', f'POST failed: {ex}', level='ERROR')
         print(f"\n  ❌ POST to Next.js failed: {ex}")
-        print("     Is the dev server running at http://localhost:3000?")
+        print("     Check NEXTJS_INGEST_URL and the Next.js ingest service configuration.")
         # Save payload locally so it's not lost
         outfile = Path('/tmp/cosmeon_gee_payload.json')
         outfile.write_text(json.dumps(payload, indent=2, default=str))

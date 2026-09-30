@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { spawn } from 'child_process';
-import path from 'path';
 import { getCachedResult, setCachedResult } from '@/lib/jobQueue';
+import { getCosmeonApi } from '@/lib/cosmeonApi';
 
 /**
  * POST /api/studio/pixel-grid
@@ -23,35 +22,30 @@ export async function POST(req: NextRequest) {
         }
         console.log('[PixelGrid] Cache MISS — spawning GEE pipeline');
 
-        // ── 2. Spawn Python GEE pipeline ──────────────────────────────────
-        const scriptPath = path.join(process.cwd(), 'cosmeon', 'pixel_grid.py');
+        const service = getCosmeonApi();
+        if (!service) {
+            return NextResponse.json(
+                { success: false, error: 'Private COSMEON API is not configured' },
+                { status: 503 }
+            );
+        }
 
-        const result = await new Promise<any>((resolve) => {
-            const proc = spawn('python3', [scriptPath]);
-            let stdout = '';
-            let stderr = '';
-
-            const timer = setTimeout(() => {
-                proc.kill('SIGKILL');
-                resolve({ success: false, error: 'Pixel grid timed out after 60s' });
-            }, 60_000);
-
-            proc.stdout.on('data', (d) => { stdout += d.toString(); });
-            proc.stderr.on('data', (d) => { stderr += d.toString(); });
-
-            proc.on('close', (code) => {
-                clearTimeout(timer);
-                try {
-                    const jsonStart = stdout.indexOf('{');
-                    resolve(JSON.parse(stdout.substring(jsonStart)));
-                } catch {
-                    resolve({ success: false, error: stderr || `Exit ${code}` });
-                }
-            });
-
-            proc.stdin.write(JSON.stringify(body));
-            proc.stdin.end();
+        const response = await fetch(service.url('pixel-grid'), {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${service.token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+            cache: 'no-store',
         });
+        const result = await response.json().catch(() => null);
+        if (!response.ok) {
+            return NextResponse.json(
+                { success: false, error: 'Private COSMEON API request failed' },
+                { status: response.status >= 500 ? 502 : response.status }
+            );
+        }
 
         // ── 3. Store non-demo results in cache ────────────────────────────
         if (result?.success) {
@@ -60,7 +54,8 @@ export async function POST(req: NextRequest) {
         }
 
         return NextResponse.json(result);
-    } catch (err: any) {
-        return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    } catch (err) {
+        console.error('[API /studio/pixel-grid] Remote request failed:', err);
+        return NextResponse.json({ success: false, error: 'Private COSMEON API is unavailable' }, { status: 502 });
     }
 }

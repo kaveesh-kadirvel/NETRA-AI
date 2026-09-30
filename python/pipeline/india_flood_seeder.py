@@ -19,8 +19,10 @@ try:
 except Exception:
     pass
 
-PIPELINE_SECRET = os.getenv('PIPELINE_SECRET', 'cosmeon-secret-2026')
-INGEST_URL      = os.getenv('NEXTJS_INGEST_URL', 'http://localhost:3000/api/pipeline/ingest')
+PIPELINE_SECRET = os.getenv('PIPELINE_SECRET')
+INGEST_URL      = os.getenv('NEXTJS_INGEST_URL')
+if not PIPELINE_SECRET or not INGEST_URL:
+    raise RuntimeError('PIPELINE_SECRET and NEXTJS_INGEST_URL are required')
 
 TODAY      = datetime.now(timezone.utc)
 END_DATE   = TODAY.strftime('%Y-%m-%d')

@@ -1,20 +1,8 @@
 /**
  * lib/jobQueue.ts
- * In-memory async job queue + 24h analysis cache for GEE pipeline results.
- * Eliminates synchronous blocking, prevents duplicate GEE calls, stops demo-killer 504s.
+ * Best-effort instance-local analysis cache for GEE results.
+ * Production job state lives in the configured persistent Studio job service.
  */
-
-type JobStatus = 'pending' | 'done' | 'error';
-
-interface Job {
-    status: JobStatus;
-    result?: any;
-    error?: string;
-    createdAt: number;
-}
-
-// In-memory store (survives hot-reloads via module singleton)
-const jobStore = new Map<string, Job>();
 
 // 24-hour Analysis Ready Data (ARD) cache — keyed by bbox+dates hash
 const analysisCache = new Map<string, { result: any; cachedAt: number }>();
@@ -76,24 +64,3 @@ export function clearAllCache(): void {
     analysisCache.clear();
 }
 
-/** Create a new pending job, returns job_id */
-export function createJob(jobId: string): void {
-    jobStore.set(jobId, { status: 'pending', createdAt: Date.now() });
-}
-
-/** Mark a job as completed with result */
-export function completeJob(jobId: string, result: any): void {
-    const job = jobStore.get(jobId);
-    if (job) jobStore.set(jobId, { ...job, status: 'done', result });
-}
-
-/** Mark a job as failed */
-export function failJob(jobId: string, error: string): void {
-    const job = jobStore.get(jobId);
-    if (job) jobStore.set(jobId, { ...job, status: 'error', error });
-}
-
-/** Retrieve a job by ID */
-export function getJob(jobId: string): Job | undefined {
-    return jobStore.get(jobId);
-}

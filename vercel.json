@@ -1,0 +1,40 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "app": {
+      "root": ".",
+      "framework": "nextjs",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "python",
+          "format": "url",
+          "env": "PYTHON_PIPELINE_URL"
+        }
+      ]
+    },
+    "cosmeon": {
+      "root": "cosmeon",
+      "runtime": "container",
+      "entrypoint": "Dockerfile.vercel"
+    },
+    "python": {
+      "root": "python",
+      "framework": "fastapi",
+      "entrypoint": "app:app",
+      "functions": {
+        "app.py": {
+          "maxDuration": 300
+        }
+      }
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "app"
+      }
+    }
+  ]
+}
