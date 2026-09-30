@@ -1,14 +1,16 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export type DistrictRiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'UNKNOWN';
+
 export interface IDistrict extends Document {
     districtName: string;
     stateName: string;
     countryCode: string;
-    geometry: any; // Store as Mixed — populated by Python GEE pipeline with real MultiPolygon
+    geometry: GeoJSON.Geometry | null;
     areaKm2: number;
     population2020: number;
     gadmLevel2Id: string;
-    currentRiskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'UNKNOWN';
+    currentRiskLevel: DistrictRiskLevel;
     lastAssessedAt: Date;
     totalEventsCount: number;
 }
@@ -38,4 +40,6 @@ const DistrictSchema = new Schema<IDistrict>(
 DistrictSchema.index({ districtName: 1, stateName: 1 }, { unique: true });
 DistrictSchema.index({ currentRiskLevel: 1 });
 
-export const District = mongoose.models.District || mongoose.model<IDistrict>('District', DistrictSchema);
+export const District =
+    (mongoose.models.District as mongoose.Model<IDistrict> | undefined) ??
+    mongoose.model<IDistrict>('District', DistrictSchema);

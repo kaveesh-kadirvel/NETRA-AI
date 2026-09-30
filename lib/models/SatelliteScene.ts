@@ -28,5 +28,5 @@ const SatelliteSceneSchema = new Schema<ISatelliteScene>(
 );
 
 export const SatelliteScene =
-    mongoose.models.SatelliteScene ||
+    (mongoose.models.SatelliteScene as mongoose.Model<ISatelliteScene> | undefined) ??
     mongoose.model<ISatelliteScene>('SatelliteScene', SatelliteSceneSchema);

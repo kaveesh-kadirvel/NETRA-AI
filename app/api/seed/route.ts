@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { FarmPlot } from '@/lib/models/FarmPlot';
+import { FarmPlot, type FarmHealthStatus } from '@/lib/models/FarmPlot';
 import { PlotHealthLog } from '@/lib/models/PlotHealthLog';
 
 export async function GET() {
@@ -11,7 +11,7 @@ export async function GET() {
         await PlotHealthLog.deleteMany({});
         
         // Let's create an array of 20 diverse farms across India.
-        const farms = [
+        const farms: Array<{ name: string; crop: string; lat: number; lon: number; area: number; score: number; h: FarmHealthStatus; def: number; nit: number }> = [
             { name: "Punjab Wheat Co.",   crop: "Wheat",      lat: 30.90, lon: 75.85, area: 45000, score: 92, h: 'EXCELLENT', def: 120, nit: 10 },
             { name: "Haryana Agro",       crop: "Wheat",      lat: 29.05, lon: 76.08, area: 38000, score: 88, h: 'EXCELLENT', def: 200, nit: 15 },
             { name: "UP Sugarcane Plot",  crop: "Sugarcane",  lat: 26.84, lon: 80.94, area: 60000, score: 75, h: 'GOOD', def: 1400, nit: 40 },
@@ -35,7 +35,7 @@ export async function GET() {
         ];
 
         // Helper to generate a polygon approx 0.01 deg wide (~1km)
-        const getPoly = (lon: number, lat: number) => {
+        const getPoly = (lon: number, lat: number): GeoJSON.Polygon => {
             const offset = 0.005;
             return {
                 type: 'Polygon',
@@ -61,11 +61,15 @@ export async function GET() {
                 totalLogsCount: 1
             });
 
+            if (!farm) {
+                throw new Error(`Failed to create farm seed document for ${f.name}`);
+            }
+
             // Add 5 days of history for trend lines
             for(let i = 4; i >= 0; i--) {
                 const date = new Date();
                 date.setDate(date.getDate() - i);
-                
+
                 await PlotHealthLog.create({
                     farmId: farm._id,
                     date: date,

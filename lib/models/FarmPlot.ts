@@ -1,12 +1,14 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export type FarmHealthStatus = 'POOR' | 'FAIR' | 'GOOD' | 'EXCELLENT' | 'UNKNOWN';
+
 export interface IFarmPlot extends Document {
     farmName: string;
     ownerId: string;
     cropType: string;
-    geometry: any; // GeoJSON Polygon drawn by the user
+    geometry: GeoJSON.Geometry | null;
     areaSqm: number;
-    currentHealthStatus: 'POOR' | 'FAIR' | 'GOOD' | 'EXCELLENT' | 'UNKNOWN';
+    currentHealthStatus: FarmHealthStatus;
     lastAssessedAt: Date;
     totalLogsCount: number;
 }
@@ -33,4 +35,6 @@ const FarmPlotSchema = new Schema<IFarmPlot>(
 FarmPlotSchema.index({ ownerId: 1 });
 FarmPlotSchema.index({ currentHealthStatus: 1 });
 
-export const FarmPlot = mongoose.models.FarmPlot || mongoose.model<IFarmPlot>('FarmPlot', FarmPlotSchema);
+export const FarmPlot =
+    (mongoose.models.FarmPlot as mongoose.Model<IFarmPlot> | undefined) ??
+    mongoose.model<IFarmPlot>('FarmPlot', FarmPlotSchema);

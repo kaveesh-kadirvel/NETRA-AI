@@ -418,7 +418,10 @@ export default function KisanBotPage() {
                                 marginBottom: 16,
                                 boxShadow: `0 8px 24px ${agent.color}30`,
                             }}>
-                                {React.cloneElement(agent.icon as React.ReactElement, { size: 28 })}
+                                {React.cloneElement(
+                                  agent.icon as React.ReactElement<{ size?: number }>,
+                                { size: 28 }
+                            )}
                             </div>
 
                             <div style={{ textAlign: 'center', marginBottom: 24 }}>

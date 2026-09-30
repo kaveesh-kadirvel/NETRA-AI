@@ -1,7 +1,14 @@
 import { NextRequest } from 'next/server';
 import Groq from 'groq-sdk';
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+function getGroqClient() {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+        throw new Error('GROQ_API_KEY is missing. Configure the environment variable before using the studio AI chat feature.');
+    }
+
+    return new Groq({ apiKey });
+}
 
 /* ════════════════════════════════════════════════════════════════
    5 ROLE-BASED EXPERT AGENTS — Each with a unique analytical lens
@@ -219,6 +226,8 @@ export async function POST(req: NextRequest) {
                 content: m.content,
             })),
         ];
+
+        const groq = getGroqClient();
 
         const chatCompletion = await groq.chat.completions.create({
             messages: groqMessages,

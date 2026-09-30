@@ -1,11 +1,14 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type RiskEventStatus = 'active' | 'resolved' | 'monitoring';
+
 export interface IRiskEvent extends Document {
     districtId: mongoose.Types.ObjectId;
     sceneId: mongoose.Types.ObjectId;
     eventDate: Date;
     detectedAt: Date;
-    riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    riskLevel: RiskLevel;
     riskScore: number;
     floodAreaKm2: number;
     floodPctDistrict: number;
@@ -13,10 +16,7 @@ export interface IRiskEvent extends Document {
     confidenceScore: number;
     detectionMethod: 'NDWI' | 'SAR' | 'UNET' | 'ENSEMBLE' | 'WEATHER_ESTIMATE';
     changeFromPrevKm2: number;
-    floodGeometry: {
-        type: 'MultiPolygon';
-        coordinates: number[][][][];
-    };
+    floodGeometry: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
     enrichment: {
         rainfallMm7d: number;
         rainfallSource: string;
@@ -26,7 +26,7 @@ export interface IRiskEvent extends Document {
         landCoverAgriPct: number;
         jrcPermanentWaterPct: number;
     };
-    status: 'active' | 'resolved' | 'monitoring';
+    status: RiskEventStatus;
     metadata: Record<string, unknown>;
 }
 
@@ -63,4 +63,6 @@ const RiskEventSchema = new Schema<IRiskEvent>(
 RiskEventSchema.index({ districtId: 1, eventDate: -1 });
 RiskEventSchema.index({ riskLevel: 1, eventDate: -1 });
 
-export const RiskEvent = mongoose.models.RiskEvent || mongoose.model<IRiskEvent>('RiskEvent', RiskEventSchema);
+export const RiskEvent =
+    (mongoose.models.RiskEvent as mongoose.Model<IRiskEvent> | undefined) ??
+    mongoose.model<IRiskEvent>('RiskEvent', RiskEventSchema);

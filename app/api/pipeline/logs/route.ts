@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { ProcessingLog } from '@/lib/models/ProcessingLog';
+import { ProcessingLog, type IProcessingLog } from '@/lib/models/ProcessingLog';
 
 /**
  * GET /api/pipeline/logs
@@ -25,19 +25,19 @@ export async function GET(req: NextRequest) {
         const level = searchParams.get('level');
         const stage = searchParams.get('stage');
 
-        const filter: Record<string, unknown> = {};
+        const filter: { runId?: string; level?: IProcessingLog['level']; stage?: string } = {};
         if (runId) filter.runId = runId;
-        if (level) filter.level = level.toUpperCase();
+        if (level) filter.level = level.toUpperCase() as IProcessingLog['level'];
         if (stage) filter.stage = stage.toUpperCase();
 
         const logs = await ProcessingLog
             .find(filter)
             .sort({ timestamp: -1 })
             .limit(limit)
-            .lean();
+            .lean<IProcessingLog[]>();
 
         // Group by runId so caller can see runs at a glance
-        const runsMap: Record<string, { runId: string; startedAt: Date | null; stages: string[]; errors: number; logs: any[] }> = {};
+        const runsMap: Record<string, { runId: string; startedAt: Date | null; stages: string[]; errors: number; logs: IProcessingLog[] }> = {};
         for (const log of logs) {
             const rid = log.runId ?? 'unknown';
             if (!runsMap[rid]) {

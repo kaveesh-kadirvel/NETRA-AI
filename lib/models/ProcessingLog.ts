@@ -23,5 +23,5 @@ const ProcessingLogSchema = new Schema<IProcessingLog>({
 });
 
 export const ProcessingLog =
-    mongoose.models.ProcessingLog ||
+    (mongoose.models.ProcessingLog as mongoose.Model<IProcessingLog> | undefined) ??
     mongoose.model<IProcessingLog>('ProcessingLog', ProcessingLogSchema);

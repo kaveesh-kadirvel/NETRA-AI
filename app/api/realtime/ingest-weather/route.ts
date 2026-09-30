@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { RiskEvent } from '@/lib/models/RiskEvent';
+import { RiskEvent, type RiskLevel } from '@/lib/models/RiskEvent';
 import { District } from '@/lib/models/District';
 import { SatelliteScene } from '@/lib/models/SatelliteScene';
 
@@ -44,7 +44,7 @@ const ELEV_VULN: Record<string, number> = {
     Kamrup: 0.62, Dhubri: 0.78, Patna: 0.85, Srinagar: 0.92, Mumbai: 0.88, Kochi: 0.95, Wayanad: 0.82,
 };
 
-function classifyRisk(score: number): string {
+function classifyRisk(score: number): RiskLevel {
     return score >= 76 ? 'CRITICAL' : score >= 51 ? 'HIGH' : score >= 26 ? 'MEDIUM' : 'LOW';
 }
 
@@ -77,7 +77,7 @@ function floodBbox(lat: number, lon: number, areaKm2: number): number[] | null {
  * Used by the Flood Map when no GEE pixel geometry is available.
  * This is an Open-Meteo derived ESTIMATE, not a satellite-detected boundary.
  */
-function buildFloodPolygon(lat: number, lon: number, areaKm2: number): object | null {
+function buildFloodPolygon(lat: number, lon: number, areaKm2: number): GeoJSON.Polygon | null {
     if (areaKm2 <= 0) return null;
     const s = Math.sqrt(Math.max(areaKm2, 1)) / 111 * 0.7; // scale to estimated area
     return {
@@ -127,6 +127,10 @@ export async function POST() {
             { upsert: true, new: true }
         );
 
+        if (!scene) {
+            throw new Error('Satellite scene upsert failed');
+        }
+
         // Build weather lookup
         const wxByDistrict: Record<string, any> = {};
         for (const d of weatherData.districts) {
@@ -163,13 +167,17 @@ export async function POST() {
                 { upsert: true, new: true, returnDocument: 'after' }
             );
 
+            if (!district) {
+                throw new Error(`District update failed for ${info.name}`);
+            }
+
             // Previous event for delta
             const prev = await RiskEvent
                 .findOne({ districtId: district._id })
                 .sort({ eventDate: -1 })
                 .lean();
             const changeFromPrev = prev
-                ? parseFloat((floodAreaKm2 - (prev as any).floodAreaKm2).toFixed(1))
+                ? parseFloat((floodAreaKm2 - prev.floodAreaKm2).toFixed(1))
                 : 0;
 
             // Compute flood polygon for Flood Map rendering
@@ -213,6 +221,10 @@ export async function POST() {
                     fetchedAt: wx.fetchedAt,
                 },
             });
+
+            if (!event) {
+                throw new Error(`Risk event creation failed for ${info.name}`);
+            }
 
             results.push({
                 district: info.name,

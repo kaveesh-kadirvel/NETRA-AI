@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
         // Validate input
         const validation = validateDronePayload(body);
-        if (!validation.ok) {
+        if (validation.ok === false) {
             return NextResponse.json({
                 ok: false,
                 error: validation.error,

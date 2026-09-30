@@ -1,8 +1,7 @@
 import 'dotenv/config';
 import { connectDB } from './lib/mongodb';
-import { FarmPlot } from './lib/models/FarmPlot';
+import { FarmPlot, type FarmHealthStatus } from './lib/models/FarmPlot';
 import { PlotHealthLog } from './lib/models/PlotHealthLog';
-import { Types } from 'mongoose';
 
 async function seed() {
     await connectDB();
@@ -10,10 +9,10 @@ async function seed() {
 
     await FarmPlot.deleteMany({});
     await PlotHealthLog.deleteMany({});
-    
+
     console.log("Cleared old farms");
 
-    const farms = [
+    const farms: Array<{ name: string; crop: string; lat: number; lon: number; area: number; score: number; h: FarmHealthStatus; def: number; nit: number }> = [
         { name: "Green Acres",     crop: "Wheat", lat: 26.14, lon: 91.74, area: 5000, score: 85, h: 'EXCELLENT', def: 120, nit: 14 },
         { name: "Sunrise Valley",  crop: "Rice",  lat: 26.02, lon: 89.98, area: 12000, score: 45, h: 'FAIR', def: 1400, nit: 85 },
         { name: "Blue Ridge Plot", crop: "Corn",  lat: 26.32, lon: 91.00, area: 8000, score: 18, h: 'POOR', def: 2300, nit: 154 }
@@ -31,11 +30,15 @@ async function seed() {
             totalLogsCount: 1
         });
 
+        if (!farm) {
+            throw new Error(`Failed to create farm: ${f.name}`);
+        }
+
         // Add 5 days of history for trend lines
         for(let i = 4; i >= 0; i--) {
             const date = new Date();
             date.setDate(date.getDate() - i);
-            
+
             await PlotHealthLog.create({
                 farmId: farm._id,
                 date: date,

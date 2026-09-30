@@ -1,7 +1,7 @@
+'use client';
+
 import { FileText, Download, Clock, AlertTriangle } from 'lucide-react';
 import { formatDate } from '@/lib/utils/formatters';
-
-export const metadata = { title: 'Reports · NETRA.AI' };
 
 const MOCK_REPORTS = [
     { id: 'RPT-2026-001', title: 'Assam Flood Assessment — Feb 2026',    date: '2026-02-22', status: 'ready',      districts: 5,  critical: 1 },

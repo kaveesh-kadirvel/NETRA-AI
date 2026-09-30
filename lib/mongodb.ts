@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI!;
+const MONGODB_URI = process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/cosmeon';
 
-if (!MONGODB_URI) {
-    throw new Error('MONGODB_URI environment variable is not defined');
+if (!process.env.MONGODB_URI) {
+    console.warn('MONGODB_URI not set; using local fallback database at mongodb://127.0.0.1:27017/cosmeon');
 }
 
 interface MongooseCache {

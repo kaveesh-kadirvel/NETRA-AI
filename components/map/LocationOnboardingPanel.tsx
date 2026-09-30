@@ -5,6 +5,8 @@ import { useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { Search, MapPin, Smartphone, Check, Loader2, MousePointer2, X } from 'lucide-react';
 
+type FarmBoundaryGeoJSON = GeoJSON.Polygon;
+
 /* ────────────────────────────────────────────────────────────────────────
    TYPES
 ──────────────────────────────────────────────────────────────────────── */
@@ -14,7 +16,7 @@ export interface LocationOnboardingPanelProps {
      * Called when a final GeoJSON polygon is produced.
      * The python pipeline expects standard format.
      */
-    onComplete: (geoJson: any) => void;
+    onComplete: (geoJson: FarmBoundaryGeoJSON) => void;
 }
 
 type Mode = 'search' | 'telegram' | 'draw' | null;
@@ -23,10 +25,10 @@ type Mode = 'search' | 'telegram' | 'draw' | null;
    UTILITY: Generate 1-hectare (100x100m) box from lat/lng
 ──────────────────────────────────────────────────────────────────────── */
 
-const generateOneHectareSquareGeoJSON = (lat: number, lng: number) => {
+const generateOneHectareSquareGeoJSON = (lat: number, lng: number): FarmBoundaryGeoJSON => {
     // 1 deg lat is approx 111km. So 100m is ~0.0009 degrees.
     const degOffset = 0.00045; // half offset for 100m total width/height
-    const coords = [
+    const coords: GeoJSON.Position[] = [
         [lng - degOffset, lat - degOffset], // BL
         [lng + degOffset, lat - degOffset], // BR
         [lng + degOffset, lat + degOffset], // TR
@@ -60,9 +62,10 @@ export default function LocationOnboardingPanel({ onComplete }: LocationOnboardi
     const [isSyncing, setIsSyncing] = useState(false);
     const [syncMessage, setSyncMessage] = useState('Waiting for Telegram Pin...');
 
-    // Draw lines layer ref
+    // Draw lines layer refs
+    const drawingLayerRef = useRef<L.FeatureGroup | null>(null);
     const polylineRef = useRef<L.Polyline | null>(null);
-    const polygonRef = useRef<L.Polygon | null>(null);
+    const polygonRef = useRef<L.Layer | null>(null);
 
     const [isOpen, setIsOpen] = useState(true);
 
@@ -74,8 +77,13 @@ export default function LocationOnboardingPanel({ onComplete }: LocationOnboardi
             setPreviewPoint(null);
             setIsSyncing(false);
             setSearchQuery('');
-            if (polylineRef.current) map.removeLayer(polylineRef.current);
-            if (polygonRef.current) map.removeLayer(polygonRef.current);
+            if (drawingLayerRef.current) {
+                drawingLayerRef.current.clearLayers();
+                drawingLayerRef.current.remove();
+                drawingLayerRef.current = null;
+            }
+            polylineRef.current = null;
+            polygonRef.current?.remove();
         }
     }, [mode, map, isOpen]);
 
@@ -106,16 +114,23 @@ export default function LocationOnboardingPanel({ onComplete }: LocationOnboardi
         if (mode !== 'draw') return;
 
         // Cleanup old lines
-        if (polylineRef.current) map.removeLayer(polylineRef.current);
-        if (polygonRef.current) map.removeLayer(polygonRef.current);
+        if (drawingLayerRef.current) {
+            drawingLayerRef.current.clearLayers();
+            drawingLayerRef.current.remove();
+        }
+        drawingLayerRef.current = L.featureGroup().addTo(map);
+        polylineRef.current = null;
+        polygonRef.current?.remove();
 
         const pts = previewPoint ? [...drawPoints, previewPoint] : drawPoints;
         if (pts.length > 0) {
-            polylineRef.current = L.polyline(pts, { color: '#0D7377', weight: 4, dashArray: '5, 10' }).addTo(map);
-            
+            polylineRef.current = L.polyline(pts, { color: '#0D7377', weight: 4, dashArray: '5, 10' });
+            drawingLayerRef.current.addLayer(polylineRef.current);
+
             // Draw snapping circle on first point if >2 points
             if (drawPoints.length >= 3) {
-                L.circleMarker(drawPoints[0], { radius: 8, color: '#16A34A', fillColor: '#16A34A', fillOpacity: 0.5 }).addTo(polylineRef.current);
+                const startMarker = L.circleMarker(drawPoints[0], { radius: 8, color: '#16A34A', fillColor: '#16A34A', fillOpacity: 0.5 });
+                drawingLayerRef.current.addLayer(startMarker);
             }
         }
     }, [drawPoints, previewPoint, map, mode]);
@@ -124,7 +139,12 @@ export default function LocationOnboardingPanel({ onComplete }: LocationOnboardi
         if (drawPoints.length < 3) return;
         
         // Remove active drawing lines
-        if (polylineRef.current) map.removeLayer(polylineRef.current);
+        if (drawingLayerRef.current) {
+            drawingLayerRef.current.clearLayers();
+            drawingLayerRef.current.remove();
+            drawingLayerRef.current = null;
+        }
+        polylineRef.current = null;
 
         // Draw final filled polygon on map
         polygonRef.current = L.polygon(drawPoints, {
@@ -135,7 +155,7 @@ export default function LocationOnboardingPanel({ onComplete }: LocationOnboardi
         const coords = drawPoints.map(p => [p.lng, p.lat]);
         coords.push(coords[0]); // Close loop
 
-        const geoJson = {
+        const geoJson: FarmBoundaryGeoJSON = {
             type: 'Polygon',
             coordinates: [coords]
         };
@@ -164,8 +184,8 @@ export default function LocationOnboardingPanel({ onComplete }: LocationOnboardi
 
                 setTimeout(() => {
                     // Draw it so the user sees something happened
-                    if (polygonRef.current) map.removeLayer(polygonRef.current);
-                    polygonRef.current = L.geoJSON(geoJson as any, {
+                    polygonRef.current?.remove();
+                    polygonRef.current = L.geoJSON(geoJson, {
                         style: { color: '#D97706', fillColor: '#F59E0B', fillOpacity: 0.4, weight: 3 }
                     }).addTo(map);
                     
@@ -207,8 +227,8 @@ export default function LocationOnboardingPanel({ onComplete }: LocationOnboardi
                         const geoJson = generateOneHectareSquareGeoJSON(loc.lat, loc.lng);
                         
                         setTimeout(() => {
-                            if (polygonRef.current) map.removeLayer(polygonRef.current);
-                            polygonRef.current = L.geoJSON(geoJson as any, {
+                            polygonRef.current?.remove();
+                            polygonRef.current = L.geoJSON(geoJson, {
                                 style: { color: '#0369A1', fillColor: '#0EA5E9', fillOpacity: 0.4, weight: 3 }
                             }).addTo(map);
                             
