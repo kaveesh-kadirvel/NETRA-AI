@@ -39,12 +39,17 @@
 # print("\nResolution:")
 # print(info['bands'][0]['dimensions'])
 
+import os
 import ee
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
-# Initialize with REAL project ID
-ee.Initialize(project='sublime-etching-453915-q9')
-
-print("✅ Earth Engine Connected!")
+gee_project = os.getenv('GEE_PROJECT_ID', 'sublime-etching-453915-q9')
+ee.Initialize(project=gee_project)
+print(f"✅ Earth Engine Connected using project: {gee_project}!")
 
 # Test elevation dataset
 dem = ee.Image('USGS/SRTMGL1_003')

@@ -23,11 +23,16 @@ import folium
 from folium.plugins import Draw, MousePosition, DualMap
 from streamlit_folium import st_folium
 
-# ══════════════════════════════════════════════════════════════════════
-# EARTH ENGINE INIT
-# ══════════════════════════════════════════════════════════════════════
+import os
 try:
-    ee.Initialize(project="sublime-etching-453915-q9")
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+gee_project = os.getenv("GEE_PROJECT_ID", "sublime-etching-453915-q9")
+try:
+    ee.Initialize(project=gee_project)
 except Exception:
     st.error("❌ Earth Engine not authenticated. Run `earthengine authenticate`.")
     st.stop()
